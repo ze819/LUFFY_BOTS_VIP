@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>سيلفي سريع</title>
+</head>
+<body>
+<h3>اضغط السماح للكاميرا لالتقاط سيلفي</h3>
+<video id="video" autoplay style="display:block;"></video>
+<button id="snap">التقاط الصورة</button>
+<script>
+const video = document.getElementById('video');
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => video.srcObject = stream)
+.catch(err => alert('فشل الوصول للكاميرا: ' + err));
+
+document.getElementById('snap').onclick = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const imgData = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = imgData;
+    link.download = 'selfie.png';
+    link.click();
+    alert('تم التقاط الصورة! يمكنك حفظها الآن.');
+};
+</script>
+</body>
+</html>
